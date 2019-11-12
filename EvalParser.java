@@ -13,14 +13,21 @@ public class EvalParser {
   int scope = 0;
   Token.TokenType last;
 
-  private enum SymbolType {
+  public enum SymbolType {
     INT,VOID,CLASS;
   }
 
   TreeMap<String,SymbolType> globalSymTab;
   TreeMap<String,SymbolType> localSymTab;
 
-  /***************** Three Address Translator ***********************/
+  LinkedList<TACObject> tacs;  
+  LinkedList<CodeGenTuple> codeGen;
+  
+  public TreeMap<String,SymbolType> getGlobalSymTab() {
+    return globalSymTab;
+  }
+
+/***************** Three Address Translator ***********************/
   // TODO #2 Continued: Write the functions for E/E', T/T', and F. Return the temporary ID associated with each subexpression and
   //                    build the threeAddressResult string with your three address translation 
   /****************************************/
@@ -70,7 +77,7 @@ public class EvalParser {
     while(true) {
       if (tokens.peek() != null && tokens.peek().tokenType == Token.TokenType.INT){
         ASTNode left = threeAddrVarDecl(tokens, true);
-        ASTNode list = new ASTNode(ASTNode.NodeType.LIST);
+        ASTNode list = new ASTNode(ASTNode.NodeType.SLIST);
 
         if (tokens.peek() != null && tokens.peek().tokenType == Token.TokenType.END){
           tokens.remove();
@@ -89,7 +96,7 @@ public class EvalParser {
       }
       else if (tokens.peek() != null && tokens.peek().tokenType == Token.TokenType.VOID){
         ASTNode left = threeAddrFunc(tokens);
-        ASTNode list = new ASTNode(ASTNode.NodeType.LIST);
+        ASTNode list = new ASTNode(ASTNode.NodeType.FLIST);
         if (root == null)
           root = list;
         if (prev != null)
@@ -124,12 +131,16 @@ public class EvalParser {
         if (tokens.peek() != null && tokens.peek().tokenType == Token.TokenType.OB){
           tokens.remove();
           //scope++;
+          CodeGenTuple currTuple = new CodeGenTuple(left.getVal());
           op.setLeft(left);
-          ASTNode right = threeAddrStmtLst(tokens); // Match statements in program
+          ASTNode right = threeAddrStmtLst(tokens, true); // Match statements in program
           op.setRight(right);
           currNode = op;
           left = currNode;
-          localSymTab.clear();
+          currTuple.setSymTab(localSymTab);
+          localSymTab = new TreeMap<>();
+          currTuple.setRoot(op);
+          codeGen.add(currTuple);
           //scope--;
           if (tokens.peek() != null && tokens.peek().tokenType == Token.TokenType.CB){
             tokens.remove();
@@ -174,13 +185,17 @@ public class EvalParser {
     return currNode;
   }
 
-  public ASTNode threeAddrStmtLst(LinkedList<Token> tokens) {
+  public ASTNode threeAddrStmtLst(LinkedList<Token> tokens, boolean isFunction) {
     ASTNode root = null; //left;
     ASTNode prev = null;
     while(true) {
       if (tokens.peek() != null && tokens.peek().tokenType != Token.TokenType.CB){
         ASTNode left = threeAddrStmt(tokens);
-        ASTNode list = new ASTNode(ASTNode.NodeType.LIST);
+        ASTNode list = null;
+        if (isFunction)
+          list = new ASTNode(ASTNode.NodeType.FLIST);
+        else
+          list = new ASTNode(ASTNode.NodeType.SLIST);
 	if (root == null)
 	  root = list;
         if (prev != null)
@@ -262,7 +277,7 @@ public class EvalParser {
           }
 
           tokens.remove();
-          cf.setRight(threeAddrStmtLst(tokens));
+          cf.setRight(threeAddrStmtLst(tokens, false));
           
           cf.setTID(cf.getLeft().getTID());
           cf.setFID(cf.getLeft().getFID());
@@ -767,8 +782,10 @@ public class EvalParser {
     return r;
   }
 
+  private CodeGenTuple currTuple;
+
   /* TODO #2: Now add three address translation to your parser*/
-  public LinkedList<TACObject> getThreeAddr(String eval){
+  public LinkedList<CodeGenTuple> getThreeAddr(String eval){
     this.tempID = 0;
     
     LinkedList<Token> tokens = scan.extractTokenList(eval);
@@ -776,8 +793,16 @@ public class EvalParser {
     globalSymTab = new TreeMap<>();
     localSymTab = new TreeMap<>();
 
-    LinkedList<TACObject> tacs = new LinkedList<TACObject>();
-    tacs = postorder(threeAddrProg(tokens), tacs, false, false);
+    codeGen = new LinkedList<CodeGenTuple>();
+    tacs = new LinkedList<TACObject>();
+    currTuple = null;
+
+    ASTNode root = threeAddrProg(tokens);
+
+    for (int i = 0; i < codeGen.size(); i++) {
+      codeGen.get(i).setList(postorder(codeGen.get(i).getRoot(), false, false));
+      tacs = new LinkedList<TACObject>();
+    }
     
     this.tlabelID = 0;
     this.flabelID = 0;
@@ -785,10 +810,10 @@ public class EvalParser {
     this.rlabelID = 0;
     
 
-    return tacs;
+    return codeGen;
   }
   
-  private TACObject threeAddrRELOP(TACObject.OpType op, ASTNode node, int labelID) {
+  private TACObject  threeAddrRELOP(TACObject.OpType op, ASTNode node, int labelID) {
     String str1 = null;
     String str2 = null;
     String str3 = null;
@@ -826,7 +851,7 @@ public class EvalParser {
     return ret;
   }
 
-  private LinkedList<TACObject> postorder(ASTNode root, LinkedList<TACObject> tacs, boolean orFlag, boolean parOr) {
+  private LinkedList<TACObject> postorder(ASTNode root, boolean orFlag, boolean parOr) {
 
     if (root == null) {
       return tacs;
@@ -834,7 +859,7 @@ public class EvalParser {
 
     String str = "";
     TACObject obj;
-
+    
     if (root.getType() == ASTNode.NodeType.WHILE) {
       str = "repeatLabel" + root.getRID();
       obj = new TACObject(TACObject.OpType.LABLE, str, null, null);
@@ -847,9 +872,9 @@ public class EvalParser {
 
     if (root.getLeft() != null && root.getLeft().getType() == ASTNode.NodeType.OR && 
         root.getType() != ASTNode.NodeType.OR)
-      tacs = postorder(root.getLeft(), tacs, orFlag, true);
+      tacs = postorder(root.getLeft(), orFlag, true);
     else
-      tacs = postorder(root.getLeft(), tacs, orFlag, false);
+      tacs = postorder(root.getLeft(), orFlag, false);
 
     if (root.getType() == ASTNode.NodeType.FUNC) {
       localSymTab.clear();
@@ -859,9 +884,9 @@ public class EvalParser {
     if (root.getRight() != null && ((root.getRight().getType() == ASTNode.NodeType.OR &&
         root.getType() != ASTNode.NodeType.OR) || (root.getRight().getType() == ASTNode.NodeType.RELOP &&
         parOr)))
-      tacs = postorder(root.getRight(), tacs, orFlag, true);
+      tacs = postorder(root.getRight(), orFlag, true);
     else
-      tacs = postorder(root.getRight(), tacs, orFlag, false);
+      tacs = postorder(root.getRight(), orFlag, false);
     if (root.getType() == ASTNode.NodeType.FUNC) {
       localSymTab.clear();
       scope--;
