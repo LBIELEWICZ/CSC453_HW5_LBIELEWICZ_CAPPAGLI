@@ -93,7 +93,20 @@ public class AdvancedJava {
 						else{
 							str = str + "r2 = " + tac.getScr2() + ";\n";
 						}
-						str = str + "r3 = r1 " + /*todo*/ + " r2;\n";
+						str = str + "r3 = r1 ";
+						if(tac.getOp == TACObject.OpType.PLUS){
+							str = str + "+"
+						}
+						else if(tac.getOp == TACObject.OpType.MINUS){
+							str = str + "-"
+						}
+						else if(tac.getOp == TACObject.OpType.MUL){
+							str = str + "*"
+						}
+						else if(tac.getOp == TACObject.OpType.DIV){
+							str = str + "/"
+						}
+						str = str + " r2;\n";
 						if(symTab.containsKey(tac.getDest())){
 							str = str + "(fp-" + symTab.get(tac.getDest()).getOffset() + ") = r3;\n";
 						}
@@ -107,9 +120,22 @@ public class AdvancedJava {
 					else if(tac.getOp == TACObject.OpType.GOTO){
 						str = "goto " + tac.getDest() + ";\n"
 					}
-					else{
-						//todo
+					else{ //Control Flow
+						if(symTab.containsKey(tac.getScr1())){
+							str = "r1 = *(fp-" + symTab.get(tac.getScr1()).getOffset() + ");\n";
+						}
+						else{
+							str = "r1 = " + tac.getScr1() + ";\n";
+						}
+						if(symTab.containsKey(tac.getScr2())){
+							str = str + "r2 = *(fp-" + symTab.get(tac.getScr2()).getOffset() + ");\n";
+						}
+						else{
+							str = str + "r2 = " + tac.getScr2() + ";\n";
+						}
+						str = str + "if(r1 < r2) goto " + tac.getDest() + ";\n";
 					}
+					writer.write(str);
 				}
 
 				str = "sp = sp + " + Integer.toString(symTab.size()) + ";\n" +
