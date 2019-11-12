@@ -7,6 +7,7 @@ public class AdvancedJava {
 		EvalParser parse = new EvalParser();
 		
 		LinkedList<CodeGenTuple> codeGen = parse.getThreeAddr(eval);
+		String str;
 		
 		BufferedWriter writer = null;
 		try {
@@ -23,7 +24,24 @@ public class AdvancedJava {
 					"int64_t *ra = &&exit;\n"+
 					"goto mainEntry;\n");
 
-		
+			TreeMap<String,SymbolType> symTab = parse.getGlobalSymTab();
+			if(symTab.size() > 0){
+				str = "int64_t";
+				int temp = 0;
+				for(Map.Entry<String,SymbolType> entry : symTab.entrySet()){
+					String key = entry.getKey();
+					SymbolType value = entry.getValue();
+					str = str + " " + key + " = 0";
+					temp++;
+					if(temp < symTab.size()){
+						str = str + ",";
+					}
+					else{
+						str = str + ";";
+					}
+				}
+				writer.write(str);
+			}
 		
 			writer.write("exit:\n"+
 					"return reserved;\n"+
