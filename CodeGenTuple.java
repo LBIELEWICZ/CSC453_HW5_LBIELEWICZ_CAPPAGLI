@@ -23,6 +23,18 @@ public class CodeGenTuple {
 		funcRoot = root;
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public TreeMap<String, EvalParser.SymbolType> getSymTab() {
+		return symbolTable;
+	}
+
+	public List<TACObject> getList(){
+		return threeAddrList;
+	}
+
 	public ASTNode getRoot() {
 		return funcRoot;
 	}

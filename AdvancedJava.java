@@ -7,6 +7,8 @@ public class AdvancedJava {
 		EvalParser parse = new EvalParser();
 		
 		LinkedList<CodeGenTuple> codeGen = parse.getThreeAddr(eval);
+
+		TreeMap<String,SymbolType> symTab;
 		String str;
 		
 		BufferedWriter writer = null;
@@ -24,7 +26,7 @@ public class AdvancedJava {
 					"int64_t *ra = &&exit;\n"+
 					"goto mainEntry;\n");
 
-			TreeMap<String,SymbolType> symTab = parse.getGlobalSymTab();
+			symTab = parse.getGlobalSymTab();
 			if(symTab.size() > 0){
 				str = "int64_t";
 				int temp = 0;
@@ -37,9 +39,30 @@ public class AdvancedJava {
 						str = str + ",";
 					}
 					else{
-						str = str + ";";
+						str = str + ";\n";
 					}
 				}
+				writer.write(str);
+			}
+
+			while(codeGen.peek != null){
+				CodeGenTuple cur = codeGen.pop();
+				symTab = cur.getSymTab();
+				str = cur.getName() + ":\n" +
+						"sp = sp - 2;\n" +
+						"*(sp+2) = fp;\n" +
+						"*(sp+1) = ra;\n" +
+						"fp = sp;\n" +
+						"sp = sp - " + Integer.toString(symTab.size()) + ";\n";
+				writer.write(str);
+
+				//TODO: Local Steps 3
+
+				str = "sp = sp + " + Integer.toString(symTab.size()) + ";\n" +
+						"fp = *(sp+2);\n" +
+						"ra = *(sp+1);\n" +
+						"sp = sp + 2;\n" +
+						"goto *ra;\n";
 				writer.write(str);
 			}
 		
