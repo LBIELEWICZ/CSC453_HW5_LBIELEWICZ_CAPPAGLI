@@ -565,6 +565,7 @@ public class EvalParser {
         op.setRight(right);
         op.setID(tempID);
         // Used to keep the original value intact for returns
+        localSymTab.put("temp" + tempID, new SymbolData(SymbolType.INT));
         tempID++;
         currNode = op;
         left = currNode;
@@ -578,6 +579,7 @@ public class EvalParser {
         ASTNode right = threeAddrT(tokens);
         op.setRight(right);
         op.setID(tempID);
+        localSymTab.put("temp" + tempID, new SymbolData(SymbolType.INT));
         tempID++;
         currNode = op;
         left = currNode;
@@ -602,6 +604,7 @@ public class EvalParser {
         ASTNode right = threeAddrF(tokens);
         op.setRight(right);
         op.setID(tempID);
+        localSymTab.put("temp" + tempID, new SymbolData(SymbolType.INT));
         tempID++;
         currNode = op;
         left = currNode;
@@ -615,6 +618,7 @@ public class EvalParser {
         ASTNode right = threeAddrF(tokens);
         op.setRight(right);
         op.setID(tempID);
+        localSymTab.put("temp" + tempID, new SymbolData(SymbolType.INT));
         tempID++;
         currNode = op;
         left = currNode;
@@ -646,7 +650,7 @@ public class EvalParser {
       currNode = new ASTNode(ASTNode.NodeType.NUM);
       currNode.setVal("" + tokens.peek().tokenVal);
       currNode.setID(tempID);
-      
+      localSymTab.put("temp" + tempID, new SymbolData(SymbolType.INT));
       this.tempID++;
       tokens.remove();
     }

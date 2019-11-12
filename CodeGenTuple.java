@@ -25,9 +25,9 @@ public class CodeGenTuple {
 
 	public void setOffset() {
 		int off = 0;
-		for(Map.Entry<String,SymbolType> entry : symbolTable.entrySet()){
+		for(Map.Entry<String,SymbolData> entry : symbolTable.entrySet()){
 			String key = entry.getKey();
-			SymbolType value = entry.getValue();
+			SymbolData value = entry.getValue();
 			value.setOffset(off);
 			off++;
 		}

@@ -6,7 +6,7 @@ public class SymbolData {
 	private EvalParser.SymbolType type;
 
 	public SymbolData(EvalParser.SymbolType t) {
-		type = t
+		type = t;
 	}
 
 	public void setOffset(int o) {
