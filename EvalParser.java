@@ -17,13 +17,13 @@ public class EvalParser {
     INT,VOID,CLASS;
   }
 
-  TreeMap<String,SymbolType> globalSymTab;
-  TreeMap<String,SymbolType> localSymTab;
+  TreeMap<String,SymbolData> globalSymTab;
+  TreeMap<String,SymbolData> localSymTab;
 
   LinkedList<TACObject> tacs;  
   LinkedList<CodeGenTuple> codeGen;
   
-  public TreeMap<String,SymbolType> getGlobalSymTab() {
+  public TreeMap<String,SymbolData> getGlobalSymTab() {
     return globalSymTab;
   }
 
@@ -685,9 +685,9 @@ public class EvalParser {
         }
         else {
           if (globalFlag)
-            globalSymTab.put(name, SymbolType.INT);
+            globalSymTab.put(name, new SymbolData(SymbolType.INT));
           else
-            localSymTab.put(name, SymbolType.INT);
+            localSymTab.put(name, new SymbolData(SymbolType.INT));
         }
       }
       else {

@@ -17,6 +17,22 @@ public class TACObject {
 		dest = d;
 	}
 
+	public OpType getOp(){
+		return op;
+	}
+
+	public String getSrc1(){
+		return src1;
+	}
+
+	public String getSrc2(){
+		return src2;
+	}
+
+	public String getDest(){
+		return dest;
+	}
+
 	public String toString(){
 		String str = null;
 		if(op == OpType.ASSIGN){

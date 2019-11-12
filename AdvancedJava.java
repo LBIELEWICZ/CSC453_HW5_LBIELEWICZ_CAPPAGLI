@@ -10,6 +10,10 @@ public class AdvancedJava {
 
 		TreeMap<String,SymbolType> symTab;
 		String str;
+		CodeGenTuple cur;
+		List<TACObject> threeAddr;
+		TACObject tac;
+		int temp;
 		
 		BufferedWriter writer = null;
 		try {
@@ -29,7 +33,7 @@ public class AdvancedJava {
 			symTab = parse.getGlobalSymTab();
 			if(symTab.size() > 0){
 				str = "int64_t";
-				int temp = 0;
+				temp = 0;
 				for(Map.Entry<String,SymbolType> entry : symTab.entrySet()){
 					String key = entry.getKey();
 					SymbolType value = entry.getValue();
@@ -45,8 +49,10 @@ public class AdvancedJava {
 				writer.write(str);
 			}
 
-			while(codeGen.peek != null){
-				CodeGenTuple cur = codeGen.pop();
+			temp = 0;
+			while(temp < codeGen.size()){
+				cur = codeGen.get(temp);
+				cur.setOffset();
 				symTab = cur.getSymTab();
 				str = cur.getName() + ":\n" +
 						"sp = sp - 2;\n" +
@@ -56,7 +62,55 @@ public class AdvancedJava {
 						"sp = sp - " + Integer.toString(symTab.size()) + ";\n";
 				writer.write(str);
 
-				//TODO: Local Steps 3
+				threeAddr = cur.getList();
+				String s;
+				while(threeAddr.peek != null){
+					tac = threeAddr.pop();
+					if(tac.getOp == TACObject.OpType.ASSIGN){
+						if(symTab.containsKey(tac.getScr1())){
+							str = "r1 = *(fp-" + symTab.get(tac.getScr1()).getOffset() + ");\n";
+						}
+						else{
+							str = "r1 = " + tac.getScr1() + ";\n";
+						}
+						if(symTab.containsKey(tac.getDest())){
+							str = str + "(fp-" + symTab.get(tac.getDest()).getOffset() ") = r1;\n";
+						}
+						else{
+							str = str + tac.getDest() + " = r1;\n";
+						}
+					}
+					else if(tac.getOp == TACObject.OpType.PLUS || tac.getOp == TACObject.OpType.MINUS || tac.getOp == TACObject.OpType.MUL || tac.getOp == TACObject.OpType.DIV){
+						if(symTab.containsKey(tac.getScr1())){
+							str = "r1 = *(fp-" + symTab.get(tac.getScr1()).getOffset() + ");\n";
+						}
+						else{
+							str = "r1 = " + tac.getScr1() + ";\n";
+						}
+						if(symTab.containsKey(tac.getScr2())){
+							str = str + "r2 = *(fp-" + symTab.get(tac.getScr2()).getOffset() + ");\n";
+						}
+						else{
+							str = str + "r2 = " + tac.getScr2() + ";\n";
+						}
+						str = str + "r3 = r1 " + /*todo*/ + " r2;\n";
+						if(symTab.containsKey(tac.getDest())){
+							str = str + "(fp-" + symTab.get(tac.getDest()).getOffset() + ") = r3;\n";
+						}
+						else{
+							str = str + tac.getDest() + " = r3;\n";
+						}
+					}
+					else if(tac.getOp == TACObject.OpType.LABLE){
+						str = tac.getScr1() + ":\n";
+					}
+					else if(tac.getOp == TACObject.OpType.GOTO){
+						str = "goto " + tac.getDest() + ";\n"
+					}
+					else{
+						//todo
+					}
+				}
 
 				str = "sp = sp + " + Integer.toString(symTab.size()) + ";\n" +
 						"fp = *(sp+2);\n" +
@@ -64,6 +118,8 @@ public class AdvancedJava {
 						"sp = sp + 2;\n" +
 						"goto *ra;\n";
 				writer.write(str);
+
+				cur = codeGen
 			}
 		
 			writer.write("exit:\n"+

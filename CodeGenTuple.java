@@ -3,7 +3,7 @@ import java.util.*;
 public class CodeGenTuple {
 
 	private List<TACObject> threeAddrList;
-	private TreeMap<String, EvalParser.SymbolType> symbolTable;
+	private TreeMap<String, SymbolData> symbolTable;
 	String name;
 	ASTNode funcRoot;
 
@@ -11,7 +11,7 @@ public class CodeGenTuple {
 		this.name = name;
 	}
 
-	public void setSymTab(TreeMap<String, EvalParser.SymbolType> symTab) {
+	public void setSymTab(TreeMap<String, SymbolData> symTab) {
 		this.symbolTable = symTab;
 	}
 
@@ -23,11 +23,21 @@ public class CodeGenTuple {
 		funcRoot = root;
 	}
 
+	public void setOffset() {
+		int off = 0;
+		for(Map.Entry<String,SymbolType> entry : symbolTable.entrySet()){
+			String key = entry.getKey();
+			SymbolType value = entry.getValue();
+			value.setOffset(off);
+			off++;
+		}
+	}
+
 	public String getName() {
 		return name;
 	}
 
-	public TreeMap<String, EvalParser.SymbolType> getSymTab() {
+	public TreeMap<String, SymbolData> getSymTab() {
 		return symbolTable;
 	}
 
